@@ -1,0 +1,21 @@
+services:
+  my-service-init:
+    image: busybox:1.35.0-uclibc
+    user: root
+    volumes:
+      - collector-message:/tmp/message_data
+    command: chown -R 10001:10001 /tmp/message_data
+  otel-sensor:
+    image: {{ collector_docker_image }}
+    container_name: traffic-collector
+    volumes:
+      - collector-message:/var/lib/otelcol/file_storage:z
+    network_mode: host
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      my-service-init:
+        condition: service_completed_successfully
+volumes:
+  collector-message:

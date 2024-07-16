@@ -1,0 +1,74 @@
+---
+- name: Deploy Astra Traffic Collector
+  hosts: all
+  remote_user: root
+  become: true
+  gather_facts: false
+  vars:
+    docker_compose_dir_name: astra-traffic-collector
+    collector_docker_image: docker.io/getastra/traffic-collector:v0.104.0.2
+
+    ### Secret Variables
+    # dockerhub_username:
+    # dockerhub_pat:
+
+    ### Required variables
+    # collectorId:
+    # clientId:
+    # clientSecret:
+    # tokenUrl:
+
+  tasks:
+    - name: "Verify that required string variables are defined"
+      ansible.builtin.assert:
+        that: 
+          - ahs_var is defined
+          - ahs_var | length > 0
+          - ahs_var != None
+        fail_msg: "{{ ahs_var }} needs to be set for the role to work. Please refer astra dashboard for getting these variables"
+        success_msg: "Required variable {{ ahs_var }} is defined"
+      loop_control:
+        loop_var: ahs_var
+      with_items:
+        - collectorId
+        - clientId
+        - clientSecret
+        - tokenUrl
+
+    # - name: Log into DockerHub
+    #   docker_login:
+    #     username: "{{ dockerhub_username }}"
+    #     password: "{{ dockerhub_pat }}"
+
+    - name: Get the user's shell
+      shell: >
+        egrep "^{{ ansible_user }}:" /etc/passwd | awk -F: '{ print $6 }'
+      changed_when: false
+      register: user_home_dir
+
+    - name: Creates docker compose directory
+      ansible.builtin.file:
+        path: "{{ docker_compose_dir_name }}"
+        state: directory
+
+    - name: Create .env file
+      ansible.builtin.template:
+        src: templates/env.template
+        dest: "{{ docker_compose_dir_name }}/.env"
+
+    - name: Copy docker compose file
+      ansible.builtin.template:
+        src: templates/docker-compose.yaml
+        dest: "{{ docker_compose_dir_name }}/docker-compose.yaml"
+
+    - name: Copy traffic controller service file
+      ansible.builtin.template:
+        src: templates/astra-traffic-collector.service
+        dest: /etc/systemd/system/astra-traffic-collector.service
+
+    - name: Start astra traffic collector service, if not started
+      ansible.builtin.systemd_service:
+        name: astra-traffic-collector.service
+        state: started
+        enabled: yes
+        daemon_reload: true

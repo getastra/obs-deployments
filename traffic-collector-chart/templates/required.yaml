@@ -1,0 +1,4 @@
+{{- $_ := required "Client Id is a required value" .Values.secret.clientId}}
+{{- $_ := required "Client Secret is a required value" .Values.secret.clientSecret}}
+{{- $_ := required "Collector Id is a required value" .Values.secret.collectorId}}
+{{- $_ := required "Token Url is a required value" .Values.secret.tokenUrl}}

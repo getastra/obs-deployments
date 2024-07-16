@@ -1,0 +1,79 @@
+# Default values for traffic-collector-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: docker.io/getastra/traffic-collector
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "v0.104.0.2"
+
+imagePullSecrets: []
+# - name: "dockerhub-pull"
+nameOverride: "traffic-collector"
+fullnameOverride: "astra-traffic-collector"
+
+
+serviceAccountName: default
+
+secret:
+  name: astra-collector-secrets
+  collectorId: ""
+  clientId: ""
+  clientSecret: ""
+  tokenUrl: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  fsGroup: 10001
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 4317
+
+resources: {}
+  # If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+volumeClaimTemplate:
+  name: collector-message
+  storage: 1Gi
+
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: base-config
+#   configMap:
+#     name: base-config
+#     items:
+#     - key: config_base.yaml
+#       path: config_base.yaml
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts:
+- name: collector-message
+  mountPath: /var/lib/otelcol/file_storage
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

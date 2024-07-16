@@ -1,0 +1,5 @@
+@ Astra Traffic Collector @
+
+- Please connect to {{ include "traffic-collector-chart.fullname" . }}.{{ .Release.Namespace }} on port {{ .Values.service.port }} to export your data
+
+- Every collector pod have a persistent storage of {{ .Values.volumeClaimTemplate.storage }} for persisting message in case it is not able to export it to Astra's infra. Please have proper monitoring of that disk for smoth operations

@@ -8,7 +8,7 @@ image:
   repository: docker.io/getastra/traffic-collector
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v0.104.0.2"
+  tag: "v0.104.0.1"
 
 imagePullSecrets: []
 # - name: "dockerhub-pull"

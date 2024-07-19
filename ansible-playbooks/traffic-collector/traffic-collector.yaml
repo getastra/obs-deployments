@@ -6,7 +6,7 @@
   gather_facts: false
   vars:
     docker_compose_dir_name: astra-traffic-collector
-    collector_docker_image: docker.io/getastra/traffic-collector:v0.104.0.2
+    collector_docker_image: docker.io/getastra/traffic-collector:v0.104.0.1
 
     ### Secret Variables
     # dockerhub_username:

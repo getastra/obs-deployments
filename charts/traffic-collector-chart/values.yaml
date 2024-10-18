@@ -24,6 +24,7 @@ secret:
   clientId: ""
   clientSecret: ""
   tokenUrl: ""
+  otlpEndpoint: "collect-http.getastra.com:443"
 
 podAnnotations: {}
 podLabels: {}

@@ -1,0 +1,77 @@
+- name: Setup and Start Docker Container using Docker Compose
+  hosts: gcp_instances
+
+  vars:
+    image_tag: latest  # Default to 'latest' if not specified
+    compose_file: docker-compose.yml  # Compose file to be created
+    remote_base_path: ~/astra-mirroring/  # Target path to store files 
+    mirror_settings_path: ""  # Path to mirror-settings.json file (use playbook directory as base)
+    env_file_path: ""  # Path to .env file (use playbook directory as base)
+
+  tasks:
+    # Create the directory ~/astra-mirroring on the target machine
+    - name: Create directory ~/astra-mirroring
+      file:
+        path: "{{ remote_base_path }}"
+        state: directory
+        mode: '0755'
+      become: no  # Don't need sudo for user directories
+
+    # Copy mirror-settings.json and .env files to ~/astra-mirroring/
+    - name: Copy mirror-settings.json and .env files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ remote_base_path }}{{ item | basename }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+      with_items:
+        - "{{mirror_settings_path}}"
+        - "{{env_file_path}}"
+      become: no  # No need for sudo when copying files for the user
+
+    # Create a docker-compose.yml file dynamically
+    - name: Create docker-compose.yml file
+      copy:
+        content: |
+          version: '3.8'
+          services:
+            getastra-mirroring-container:
+              image: getastra/mirroring:{{ image_tag }}
+              container_name: getastra-mirroring-container
+              network_mode: host
+              volumes:
+                - ./mirror-settings.json:/root/obs-integ/mirror-settings.json
+              env_file:
+                - .env
+              restart: always
+        dest: "{{ remote_base_path }}{{ compose_file }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+      become: no  # No need for sudo for creating the compose file
+
+    # Install Docker using get.docker.com script (works for both Debian and RedHat-based systems)
+    - name: Install Docker
+      shell: |
+        curl -fsSL https://get.docker.com/ | bash
+        systemctl start docker
+        systemctl enable docker
+        usermod -aG docker {{ ansible_user }}
+      args:
+        executable: /bin/bash
+
+
+    # Pull Docker image using Docker Compose
+    - name: Pull Docker image using Docker Compose
+      shell: |
+        docker compose -f {{ remote_base_path }}{{ compose_file }} pull
+      args:
+        executable: /bin/bash
+
+    # Run Docker container using Docker Compose
+    - name: Start Docker container using Docker Compose
+      shell: |
+        docker compose -f {{ remote_base_path }}{{ compose_file }} up -d
+      args:
+        executable: /bin/bash

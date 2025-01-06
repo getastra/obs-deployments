@@ -1,48 +1,65 @@
-- name: Upgrade Docker Container using Docker Compose
-  hosts: gcp_instances
+- name: Upgrade Astra Mirroring Docker Container
+  hosts:
+  remote_user:
 
   vars:
-    image_tag: latest  # Default to 'latest' if not specified
-    compose_file: docker-compose.yml  
-    remote_base_path: ~/astra-mirroring/  # Target path where docker-compose.yml and other files are located
-    mirror_settings_path: ""  # Path to mirror-settings.json file (use playbook directory as base)
-    env_file_path: ""  # Path to .env file (use playbook directory as base)
+    image_tag: latest  # Specify the image tag to upgrade to
+    remote_base_path: ~/astra-mirroring/  # Path to where the config files and Docker Compose are located
+    mirror_settings_path: ""  # Path to the updated local mirror-settings.json file (optional)
+    env_file_path: ""  # Path to the updated local .env file (optional)
 
   tasks:
     # Ensure the directory ~/astra-mirroring exists on the target machine
-    - name: Ensure directory ~/astra-mirroring exists
+    - name: Ensure the directory exists
       file:
         path: "{{ remote_base_path }}"
         state: directory
         mode: '0755'
-      become: no  # No need for sudo for user directories
 
-    # Copy the updated mirror-settings.json and .env files to ~/astra-mirroring/ if needed
+    # Copy the updated mirror-settings.json and .env files to ~/astra-mirroring/
     - name: Copy updated mirror-settings.json and .env files
       copy:
         src: "{{ item }}"
         dest: "{{ remote_base_path }}{{ item | basename }}"
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
         mode: '0644'
       with_items:
-        - "{{mirror_settings_path}}"
-        - "{{env_file_path}}"
-      become: no  # No need for sudo for copying files
+        - "{{ mirror_settings_path }}"
+        - "{{ env_file_path }}"
+      when: item != ""  # Only copy if the file is provided (not empty)
 
-    # Pull the latest Docker image using Docker Compose
-    - name: Pull the latest Docker image using Docker Compose
-      shell: |
-        docker compose -f {{ remote_base_path }}{{ compose_file }} pull
-      args:
-        executable: /bin/bash
-      become: yes  # Requires sudo for Docker Compose
+    # Pull the latest Docker image for Astra Mirroring
+    - name: Pull the specified Docker image for Astra Mirroring
+      docker_compose:
+        definition:
+          version: '3.8'
+          services:
+            astra-mirroring:
+              image: getastra/mirroring:{{ image_tag }}
+              container_name: getastra-mirroring-container
+              network_mode: host
+              volumes:
+                - "{{ remote_base_path }}/mirror-settings.json:/root/obs-integ/mirror-settings.json"
+              env_file:
+                - "{{ remote_base_path }}/.env"
+              restart: always
+        state: present
+        pull: yes  # Pull the latest image
+        remove_orphans: yes  # Remove any orphaned containers
 
-    # Restart the Docker container using Docker Compose to apply the new image
-    - name: Restart Docker container using Docker Compose
-      shell: |
-        docker compose -f {{ remote_base_path }}{{ compose_file }} up -d
-      args:
-        executable: /bin/bash
-      become: yes  # Requires sudo to restart containers with Docker Compose
-      
+    # Restart the Astra Mirroring container to apply changes
+    - name: Restart Astra Mirroring container
+      docker_compose:
+        definition:
+          version: '3.8'
+          services:
+            astra-mirroring:
+              image: getastra/mirroring:{{ image_tag }}
+              container_name: getastra-mirroring-container
+              network_mode: host
+              volumes:
+                - "{{ remote_base_path }}/mirror-settings.json:/root/obs-integ/mirror-settings.json"
+              env_file:
+                - "{{ remote_base_path }}/.env"
+              restart: always
+        state: present
+        restarted: yes

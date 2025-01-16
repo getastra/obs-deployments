@@ -3,21 +3,21 @@
   remote_user:
 
   vars:
-    image_tag: latest  # Specify the image tag to upgrade to
     remote_base_path: ~/astra-mirroring/  # Path to where the config files and Docker Compose are located
     mirror_settings_path: ""  # Path to the updated local mirror-settings.json file (optional)
     env_file_path: ""  # Path to the updated local .env file (optional)
+    docker_compose_file: ""  # Path to the updated local docker-compose.yaml file (optional)
 
   tasks:
-    # Ensure the directory ~/astra-mirroring exists on the target machine
+    # Ensure the directory exists
     - name: Ensure the directory exists
       file:
         path: "{{ remote_base_path }}"
         state: directory
         mode: '0755'
 
-    # Copy the updated mirror-settings.json and .env files to ~/astra-mirroring/
-    - name: Copy updated mirror-settings.json and .env files
+    # Copy updated configuration files
+    - name: Copy updated configuration files
       copy:
         src: "{{ item }}"
         dest: "{{ remote_base_path }}{{ item | basename }}"
@@ -25,41 +25,10 @@
       with_items:
         - "{{ mirror_settings_path }}"
         - "{{ env_file_path }}"
-      when: item != ""  # Only copy if the file is provided (not empty)
+        - "{{ docker_compose_file }}"
 
-    # Pull the latest Docker image for Astra Mirroring
-    - name: Pull the specified Docker image for Astra Mirroring
-      docker_compose:
-        definition:
-          version: '3.8'
-          services:
-            astra-mirroring:
-              image: getastra/mirroring:{{ image_tag }}
-              container_name: getastra-mirroring-container
-              network_mode: host
-              volumes:
-                - "{{ remote_base_path }}/mirror-settings.json:/root/obs-integ/mirror-settings.json"
-              env_file:
-                - "{{ remote_base_path }}/.env"
-              restart: always
-        state: present
-        pull: yes  # Pull the latest image
-        remove_orphans: yes  # Remove any orphaned containers
-
-    # Restart the Astra Mirroring container to apply changes
-    - name: Restart Astra Mirroring container
-      docker_compose:
-        definition:
-          version: '3.8'
-          services:
-            astra-mirroring:
-              image: getastra/mirroring:{{ image_tag }}
-              container_name: getastra-mirroring-container
-              network_mode: host
-              volumes:
-                - "{{ remote_base_path }}/mirror-settings.json:/root/obs-integ/mirror-settings.json"
-              env_file:
-                - "{{ remote_base_path }}/.env"
-              restart: always
-        state: present
-        restarted: yes
+    # Pull the latest Docker image and restart the container
+    - name: Pull the latest image and restart the Astra Mirroring container
+      shell: >
+        docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} pull && 
+        docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} up -d

@@ -3,10 +3,10 @@
   remote_user:
 
   vars:
-    image_tag: latest  # Default Docker image tag
     remote_base_path: ~/astra-mirroring/
     mirror_settings_path: ""  # Path to local mirror-settings.json file
     env_file_path: ""  # Path to local .env file
+    docker_compose_file: ""  # Path to the local docker-compose.yaml file
 
   tasks:
     # Ensure the directory exists
@@ -17,7 +17,7 @@
         mode: '0755'
 
     # Copy configuration files to the target machine
-    - name: Copy mirror-settings.json and .env
+    - name: Copy configuration files
       copy:
         src: "{{ item }}"
         dest: "{{ remote_base_path }}{{ item | basename }}"
@@ -25,20 +25,9 @@
       with_items:
         - "{{ mirror_settings_path }}"
         - "{{ env_file_path }}"
+        - "{{ docker_compose_file }}"
 
-    # Start Astra Mirroring container using inline Docker Compose
+    # Start Astra Mirroring container using Docker Compose
     - name: Start Astra Mirroring container
-      docker_compose:
-        definition:
-          version: '3.8'
-          services:
-            astra-mirroring:
-              image: getastra/mirroring:{{ image_tag }}
-              container_name: getastra-mirroring-container
-              network_mode: host
-              volumes:
-                - "{{ remote_base_path }}/mirror-settings.json:/root/obs-integ/mirror-settings.json"
-              env_file:
-                - "{{ remote_base_path }}/.env"
-              restart: always
-        state: present
+      shell: >
+        docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} up -d

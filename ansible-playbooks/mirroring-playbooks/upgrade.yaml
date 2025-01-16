@@ -4,9 +4,9 @@
 
   vars:
     remote_base_path: ~/astra-mirroring/  # Path to where the config files and Docker Compose are located
-    mirror_settings_path: ""  # Path to the updated local mirror-settings.json file (optional)
-    env_file_path: ""  # Path to the updated local .env file (optional)
-    docker_compose_file: ""  # Path to the updated local docker-compose.yaml file (optional)
+    mirror_settings_path: "mirror-settings.json"  # Path to the updated local mirror-settings.json file (optional)
+    env_file_path: ".env"  # Path to the updated local .env file (optional)
+    docker_compose_file: "docker-compose.yaml"  # Path to the updated local docker-compose.yaml file (optional)
 
   tasks:
     # Ensure the directory exists
@@ -30,5 +30,4 @@
     # Pull the latest Docker image and restart the container
     - name: Pull the latest image and restart the Astra Mirroring container
       shell: >
-        docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} pull && 
         docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} up -d

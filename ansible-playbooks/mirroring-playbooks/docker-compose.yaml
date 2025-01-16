@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  astra-mirroring:
+    image: getastra/mirroring:latest  # Use IMAGE_TAG environment variable, default to 'latest'
+    container_name: getastra-mirroring-container
+    network_mode: host
+    volumes:
+      - ./mirror-settings.json:/root/obs-integ/mirror-settings.json  # Mount mirror-settings.json
+    env_file:
+      - .env  # Load environment variables from .env file
+    restart: always

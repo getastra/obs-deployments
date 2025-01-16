@@ -1,0 +1,10 @@
+- name: Remove unused Docker images for getastra/mirroring
+  hosts: gcp_instances
+
+  tasks:
+    - name: Remove unused Docker images for getastra/mirroring
+      shell: |
+        # List dangling images for getastra/mirroring and remove them
+        docker images "getastra/mirroring:*" -f "dangling=true" -q | xargs -r docker rmi -f
+      args:
+        executable: /bin/bash

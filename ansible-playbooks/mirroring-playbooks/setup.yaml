@@ -1,0 +1,33 @@
+- name: Setup Astra Mirroring using Docker Compose
+  hosts:
+  remote_user:
+
+  vars:
+    remote_base_path: ~/astra-mirroring/
+    mirror_settings_path: "mirror-settings.json"  # Path to local mirror-settings.json file
+    env_file_path: ".env"  # Path to local .env file
+    docker_compose_file: "docker-compose.yaml"  # Path to the local docker-compose.yaml file
+
+  tasks:
+    # Ensure the directory exists
+    - name: Ensure the directory exists
+      file:
+        path: "{{ remote_base_path }}"
+        state: directory
+        mode: '0755'
+
+    # Copy configuration files to the target machine
+    - name: Copy configuration files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ remote_base_path }}{{ item | basename }}"
+        mode: '0644'
+      with_items:
+        - "{{ mirror_settings_path }}"
+        - "{{ env_file_path }}"
+        - "{{ docker_compose_file }}"
+
+    # Start Astra Mirroring container using Docker Compose
+    - name: Start Astra Mirroring container
+      shell: >
+        docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} up -d

@@ -1,0 +1,33 @@
+- name: Upgrade Astra Mirroring Docker Container
+  hosts:
+  remote_user:
+
+  vars:
+    remote_base_path: ~/astra-mirroring/  # Path to where the config files and Docker Compose are located
+    mirror_settings_path: "mirror-settings.json"  # Path to the updated local mirror-settings.json file (optional)
+    env_file_path: ".env"  # Path to the updated local .env file (optional)
+    docker_compose_file: "docker-compose.yaml"  # Path to the updated local docker-compose.yaml file (optional)
+
+  tasks:
+    # Ensure the directory exists
+    - name: Ensure the directory exists
+      file:
+        path: "{{ remote_base_path }}"
+        state: directory
+        mode: '0755'
+
+    # Copy updated configuration files
+    - name: Copy updated configuration files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ remote_base_path }}{{ item | basename }}"
+        mode: '0644'
+      with_items:
+        - "{{ mirror_settings_path }}"
+        - "{{ env_file_path }}"
+        - "{{ docker_compose_file }}"
+
+    # Pull the latest Docker image and restart the container
+    - name: Pull the latest image and restart the Astra Mirroring container
+      shell: >
+        docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} up -d

@@ -37,7 +37,6 @@ spec:
       {{- end }}
       serviceAccountName: {{ .Values.serviceAccountName }}
       securityContext:
-        runAsNonRoot: true
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: collector

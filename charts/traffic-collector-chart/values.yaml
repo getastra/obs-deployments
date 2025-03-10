@@ -24,23 +24,23 @@ secret:
   clientId: ""
   clientSecret: ""
   tokenUrl: ""
-  otlpEndpoint: "collect-http.getastra.com:443"
+  otlpEndpoint: ""
   remoteAddrIdentifierHeader: ""
 
 podAnnotations: {}
 podLabels: {}
 
 podSecurityContext:  
-  fsGroup: 10001      
-  runAsUser: 1000     
-  runAsGroup: 3000    
+  fsGroup: 3000      # Set to match runAsGroup for volume access
 
 securityContext:     
   capabilities:
     drop:
       - ALL          
-  readOnlyRootFilesystem: true   
-  runAsUser: 1000    
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 3000   
   
 service:
   type: ClusterIP

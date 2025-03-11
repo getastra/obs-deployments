@@ -31,7 +31,7 @@ podAnnotations: {}
 podLabels: {}
 
 podSecurityContext:  
-  fsGroup: 3000      # Set to match runAsGroup for volume access
+  fsGroup: 10001      # Set to match runAsGroup for volume access
 
 securityContext:     
   capabilities:
@@ -39,8 +39,8 @@ securityContext:
       - ALL          
   readOnlyRootFilesystem: true
   runAsNonRoot: true
-  runAsUser: 1000
-  runAsGroup: 3000   
+  runAsUser: 10001
+  runAsGroup: 10001   
   allowPrivilegeEscalation: false
   
 service:

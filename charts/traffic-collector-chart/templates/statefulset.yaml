@@ -42,8 +42,6 @@ spec:
         - name: collector
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:

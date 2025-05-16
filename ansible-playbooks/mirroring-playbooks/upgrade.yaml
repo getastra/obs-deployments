@@ -30,4 +30,6 @@
     # Pull the latest Docker image and restart the container
     - name: Pull the latest image and restart the Astra Mirroring container
       shell: >
+        docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} down
+        docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} pull
         docker-compose -f {{ remote_base_path }}/{{ docker_compose_file | basename }} up -d

@@ -23,10 +23,26 @@ BIN_PATH="${BIN_DIR}/gitleaks"
 # Download & unpack on cache miss
 if [[ ! -x "$BIN_PATH" ]]; then
   echo "Downloading gitleaks $VERSION for $OS/$ARCH…"
+  # https://github.com/gitleaks/gitleaks/releases/download/v8.25.0/gitleaks_8.25.0_darwin_arm64.tar.gz
+  DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/download/${VERSION}/gitleaks_${VERSION}_${OS}_${ARCH}.tar.gz"
+  echo "Download URL: $DOWNLOAD_URL"
   mkdir -p "$BIN_DIR"
-  curl -sL \
-    "https://github.com/gitleaks/gitleaks/releases/download/${VERSION}/gitleaks_${VERSION}_${OS}_${ARCH}.tar.gz" \
-    | tar -xz -C "$BIN_DIR"
+  
+  # Download with more verbose output and error checking
+  if ! curl -fsSL --verbose \
+    "$DOWNLOAD_URL" \
+    | tar -xz -C "$BIN_DIR"; then
+    echo "Error: Failed to download or extract gitleaks binary"
+    echo "Please check if the version $VERSION is available for $OS/$ARCH at:"
+    echo "https://github.com/gitleaks/gitleaks/releases"
+    exit 1
+  fi
+  
+  # Verify the binary exists and is executable
+  if [[ ! -x "$BIN_PATH" ]]; then
+    echo "Error: Binary not found or not executable at $BIN_PATH"
+    exit 1
+  fi
 fi
 
 # Run the scan against the current directory

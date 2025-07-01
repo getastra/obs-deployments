@@ -7,13 +7,13 @@ VERSION="${GITLEAKS_VERSION:-v8.25.0}"
 
 # Get checked out repository
 echo "Getting checked out repository…"
-ls -ltr /
+ls -ltr
 pwd
 
 # Detect OS & ARCH for the release asset
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
-if [[ "$ARCH" == "x86_64" ]]; then ARCH="amd64"; fi
+if [[ "$ARCH" == "x86_64" ]]; then ARCH="x64"; fi
 if [[ "$ARCH" == "aarch64" ]]; then ARCH="arm64"; fi
 
 # Path to the binary inside the cache
@@ -29,7 +29,7 @@ if [[ ! -x "$BIN_PATH" ]]; then
   mkdir -p "$BIN_DIR"
   
   # Download with more verbose output and error checking
-  if ! curl -fsSL --verbose \
+  if ! curl -fsSL \
     "$DOWNLOAD_URL" \
     | tar -xz -C "$BIN_DIR"; then
     echo "Error: Failed to download or extract gitleaks binary"

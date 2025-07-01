@@ -47,9 +47,7 @@ fi
 
 # Run the scan against the current directory
 echo "Running gitleaks detect…"
-"$BIN_PATH" detect \
-  --source . \
-  --config gitleaks.toml \
+"$BIN_PATH" dir . \
   --report-format json
 
 echo "Scan complete. Report at gitleaks-report.json"

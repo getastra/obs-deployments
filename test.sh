@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Where to stash the binary
 CACHE_DIR="${HOME}/.gitleaks"
-VERSION="${GITLEAKS_VERSION:-v8.25.0}"
+VERSION="${GITLEAKS_VERSION:-8.27.2}"
 
 # Get checked out repository
 echo "Getting checked out repository…"
@@ -24,7 +24,7 @@ BIN_PATH="${BIN_DIR}/gitleaks"
 if [[ ! -x "$BIN_PATH" ]]; then
   echo "Downloading gitleaks $VERSION for $OS/$ARCH…"
   # https://github.com/gitleaks/gitleaks/releases/download/v8.25.0/gitleaks_8.25.0_darwin_arm64.tar.gz
-  DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/download/${VERSION}/gitleaks_${VERSION}_${OS}_${ARCH}.tar.gz"
+  DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_${OS}_${ARCH}.tar.gz"
   echo "Download URL: $DOWNLOAD_URL"
   mkdir -p "$BIN_DIR"
   

@@ -6,7 +6,7 @@ CACHE_DIR="${HOME}/.gitleaks"
 VERSION="${GITLEAKS_VERSION:-v8.25.0}"
 
 # Get checked out repository
-echo "🔍  Getting checked out repository…"
+echo "Getting checked out repository…"
 ls -ltr /
 pwd
 
@@ -22,7 +22,7 @@ BIN_PATH="${BIN_DIR}/gitleaks"
 
 # Download & unpack on cache miss
 if [[ ! -x "$BIN_PATH" ]]; then
-  echo "⬇️  Downloading gitleaks $VERSION for $OS/$ARCH…"
+  echo "Downloading gitleaks $VERSION for $OS/$ARCH…"
   mkdir -p "$BIN_DIR"
   curl -sL \
     "https://github.com/gitleaks/gitleaks/releases/download/${VERSION}/gitleaks_${VERSION}_${OS}_${ARCH}.tar.gz" \
@@ -30,10 +30,10 @@ if [[ ! -x "$BIN_PATH" ]]; then
 fi
 
 # Run the scan against the current directory
-echo "🔍  Running gitleaks detect…"
+echo "Running gitleaks detect…"
 "$BIN_PATH" detect \
   --source . \
   --config gitleaks.toml \
   --report-format json
 
-echo "✅  Scan complete. Report at gitleaks-report.json"
+echo "Scan complete. Report at gitleaks-report.json"

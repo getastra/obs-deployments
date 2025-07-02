@@ -8,9 +8,19 @@ VERSION="${GITLEAKS_VERSION:-8.27.2}"
 # Get checked out repository
 echo "Getting checked out repository…"
 
-#get git branch name
+#get git branch name, commit hash, and commit message, author name, author email, and date
 BRANCH_NAME=$(git branch --show-current)
+COMMIT_HASH=$(git rev-parse HEAD)
+COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+AUTHOR_NAME=$(git log -1 --pretty=%an)
+AUTHOR_EMAIL=$(git log -1 --pretty=%ae)
+DATE=$(git log -1 --pretty=%ad)
 echo "Branch name: $BRANCH_NAME"
+echo "Commit hash: $COMMIT_HASH"
+echo "Commit message: $COMMIT_MESSAGE"
+echo "Author name: $AUTHOR_NAME"
+echo "Author email: $AUTHOR_EMAIL"
+echo "Date: $DATE"
 
 # Detect OS & ARCH for the release asset
 OS="$(uname | tr '[:upper:]' '[:lower:]')"

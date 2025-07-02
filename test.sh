@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Where to stash the binary
-CACHE_DIR="${HOME}/.gitleaks"
+BIN_PATH="${HOME}/.gitleaks"
 VERSION="${GITLEAKS_VERSION:-8.27.2}"
 
 # Get checked out repository
@@ -18,38 +18,34 @@ ARCH="$(uname -m)"
 if [[ "$ARCH" == "x86_64" ]]; then ARCH="x64"; fi
 if [[ "$ARCH" == "aarch64" ]]; then ARCH="arm64"; fi
 
-# Path to the binary inside the cache - simplified
-BIN_PATH="${CACHE_DIR}/gitleaks"
-
 # Download & unpack on cache miss
-if [[ ! -x "$BIN_PATH" ]]; then
+if [[ ! -x "$BIN_PATH/gitleaks" ]]; then
   echo "Downloading gitleaks $VERSION for $OS/$ARCH…"
   DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_${OS}_${ARCH}.tar.gz"
   echo "Download URL: $DOWNLOAD_URL"
-  mkdir -p "$CACHE_DIR"
+  mkdir -p "$BIN_PATH"
   
   # Download with more verbose output and error checking
   if ! curl -fsSL \
     "$DOWNLOAD_URL" \
-    | tar -xz -C "$CACHE_DIR"; then
+    | tar -xz -C "$BIN_PATH"; then
     echo "Error: Failed to download or extract gitleaks binary"
     exit 1
   fi
   
   # Verify the binary exists and is executable
-  if [[ ! -x "$BIN_PATH" ]]; then
-    echo "Error: Binary not found or not executable at $BIN_PATH"
+  if [[ ! -x "$BIN_PATH/gitleaks" ]]; then
+    echo "Error: Binary not found or not executable at $BIN_PATH/gitleaks"
     exit 1
   fi
 fi
 
 # Run the scan against the current directory
 echo "Running gitleaks detect…"
+echo "Binary location: $BIN_PATH"
+ls "$BIN_PATH"
 
-echo "BIN_PATH: $BIN_PATH"
-ls $CACHE_DIR
-
-"$BIN_PATH" git . \
+"$BIN_PATH/gitleaks" git . \
   --report-format json \
   --report-path gitleaks-report.json \
   --no-banner \

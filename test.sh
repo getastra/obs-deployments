@@ -47,7 +47,11 @@ fi
 
 # Run the scan against the current directory
 echo "Running gitleaks detect…"
-"$BIN_PATH" dir . \
-  --report-format json
+"$BIN_PATH" git . \
+  --report-format json \
+  --report-path gitleaks-report.json
 
 echo "Scan complete. Report at gitleaks-report.json"
+
+# Print the report
+cat gitleaks-report.json

@@ -8,6 +8,10 @@ VERSION="${GITLEAKS_VERSION:-8.27.2}"
 # Get checked out repository
 echo "Getting checked out repository…"
 
+#get git branch name
+BRANCH_NAME=$(git branch --show-current)
+echo "Branch name: $BRANCH_NAME"
+
 # Detect OS & ARCH for the release asset
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
@@ -50,7 +54,9 @@ ls $CACHE_DIR
 
 "$BIN_PATH" git . \
   --report-format json \
-  --report-path gitleaks-report.json
+  --report-path gitleaks-report.json \
+  --no-banner \
+  --max-target-megabytes 1
 
 echo "Scan complete. Report at gitleaks-report.json"
 

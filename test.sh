@@ -36,9 +36,6 @@ if [[ ! -x "$BIN_PATH" ]]; then
     exit 1
   fi
   
-  #remove the tar.gz file
-  rm gitleaks_${VERSION}_${OS}_${ARCH}.tar.gz
-  
   # Verify the binary exists and is executable
   if [[ ! -x "$BIN_PATH" ]]; then
     echo "Error: Binary not found or not executable at $BIN_PATH"

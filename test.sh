@@ -33,6 +33,11 @@ if [[ ! -x "$BIN_PATH/gitleaks" ]]; then
     exit 1
   fi
   
+  #remove all files except gitleaks if exists
+  mv "$BIN_PATH/gitleaks" ../
+  rm -rf "$BIN_PATH/*"
+  mv ../gitleaks "$BIN_PATH/gitleaks"
+
   # Verify the binary exists and is executable
   if [[ ! -x "$BIN_PATH/gitleaks" ]]; then
     echo "Error: Binary not found or not executable at $BIN_PATH/gitleaks"
@@ -45,7 +50,7 @@ echo "Running gitleaks detect…"
 echo "Binary location: $BIN_PATH"
 ls "$BIN_PATH"
 
-"$BIN_PATH/gitleaks" git . \
+"$BIN_PATH/gitleaks" dir . \
   --report-format json \
   --report-path gitleaks-report.json \
   --no-banner \

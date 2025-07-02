@@ -59,7 +59,7 @@ ls -ltr "$BIN_PATH"
   --report-format json \
   --no-banner \
   --max-target-megabytes 1 \
-  --log-level error \
+  --log-level debug \
   --report-path gitleaks-report.json
 
 echo "Scan complete. Report at gitleaks-report.json"

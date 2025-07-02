@@ -42,11 +42,6 @@ if [[ ! -x "$BIN_PATH/gitleaks" ]]; then
     echo "Error: Failed to download or extract gitleaks binary"
     exit 1
   fi
-  
-  #remove all files except gitleaks if exists
-  mv "$BIN_PATH/gitleaks" ../
-  rm -rf "$BIN_PATH/*"
-  mv ../gitleaks "$BIN_PATH/gitleaks"
 
   # Verify the binary exists and is executable
   if [[ ! -x "$BIN_PATH/gitleaks" ]]; then
@@ -58,13 +53,14 @@ fi
 # Run the scan against the current directory
 echo "Running gitleaks detect…"
 echo "Binary location: $BIN_PATH"
-ls "$BIN_PATH"
+ls -ltr "$BIN_PATH"
 
 "$BIN_PATH/gitleaks" dir . \
   --report-format json \
-  --report-path gitleaks-report.json \
   --no-banner \
-  --max-target-megabytes 1
+  --max-target-megabytes 1 \
+  --log-level error \
+  --report-path gitleaks-report.json
 
 echo "Scan complete. Report at gitleaks-report.json"
 

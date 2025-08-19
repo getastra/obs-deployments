@@ -3,6 +3,17 @@ entries:
   traffic-collector-chart:
   - apiVersion: v2
     appVersion: v0.109.0.5
+    created: "2025-08-19T18:01:24.359033938+05:30"
+    description: Astra client side traffic collector
+    digest: 17440c751f4afd1f190cdc57fbe033069b90054d24a881881129dc8f60704edc
+    icon: https://my.getastra.com/astra-logo.svg
+    name: traffic-collector-chart
+    type: application
+    urls:
+    - traffic-collector-chart-0.9.1.tgz
+    version: 0.9.1
+  - apiVersion: v2
+    appVersion: v0.109.0.5
     created: "2025-08-19T12:28:20.568939416+05:30"
     description: Astra client side traffic collector
     digest: 395d5fb432ae4b441447be027bd891b6fb2d40d35f034eb1f95da00697e9ed19
@@ -144,4 +155,4 @@ entries:
     urls:
     - traffic-collector-chart-0.1.0.tgz
     version: 0.1.0
-generated: "2025-08-19T12:28:20.569054599+05:30"
+generated: "2025-08-19T18:01:24.359174669+05:30"

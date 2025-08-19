@@ -54,7 +54,7 @@ spec:
             - name: service-port
               containerPort: 4317
               protocol: TCP
-            - name: http-service-port
+            - name: http-svc-port
               containerPort: 4318
               protocol: TCP
           resources:

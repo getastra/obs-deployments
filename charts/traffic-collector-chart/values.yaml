@@ -45,8 +45,10 @@ securityContext:
   allowPrivilegeEscalation: false
   
 service:
-  type: ClusterIP
   port: 4317
+
+httpService:
+  port: 4318
 
 resources: {}
   # If you do want to specify resources, uncomment the following

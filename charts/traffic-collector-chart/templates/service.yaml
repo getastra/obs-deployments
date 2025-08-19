@@ -16,7 +16,7 @@ spec:
       protocol: TCP
       name: metric
     - port: {{ .Values.httpService.port }}
-      targetPort: http-service-port
+      targetPort: http-svc-port
       protocol: TCP
       name: http
   selector:

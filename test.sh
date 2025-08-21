@@ -21,7 +21,7 @@ ASTRA_SECRET_SCAN_GIT_ROOT="${ASTRA_SECRET_SCAN_GIT_ROOT:-}"
 
 # Initialize git metadata variables
 if command -v git &> /dev/null; then
-    BRANCH_NAME=$(git branch --show-current 2>/dev/null || echo "")
+    BRANCH_NAME="$(git branch --show-current 2>/dev/null || echo "${CI_COMMIT_REF_NAME:-${GITHUB_REF_NAME:-${BRANCH_NAME}}}")"
     COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
     COMMIT_MESSAGE=$(git log -1 --pretty=%B 2>/dev/null || echo "")
     AUTHOR_NAME=$(git log -1 --pretty=%an 2>/dev/null || echo "")

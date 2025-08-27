@@ -28,7 +28,8 @@ secret:
   remoteAddrIdentifierHeader: ""
   probabilisticSamplerPercentage: "100"
 
-podAnnotations: {}
+podAnnotations:
+  checksum/config: '{{ include ("traffic-collector-chart.secret") . | sha256sum }}'
 podLabels: {}
 
 podSecurityContext:  

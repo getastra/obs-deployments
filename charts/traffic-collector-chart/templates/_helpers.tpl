@@ -50,3 +50,10 @@ app.kubernetes.io/name: {{ include "traffic-collector-chart.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.getastra.com: traffic-collector
 {{- end }}
+
+{{/*
+Configuration Secret
+*/}}
+{{- define "traffic-collector-chart.secret" -}}
+{{ .Values.secret }}
+{{- end }}

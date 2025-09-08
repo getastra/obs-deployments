@@ -1,8 +1,9 @@
 #!/bin/bash
 
 #astra pentest trigger variables
-ASTRA_SCAN_START_URL="https://api.getastra.dev/webhooks/integrations/ci-cd"
-ASTRA_SCAN_STATUS_URL="https://api.getastra.dev/webhooks/integrations/ci-cd/scan-status"
+ASTRA_DAST_SCAN_ENABLED="${ASTRA_DAST_SCAN_ENABLED:-true}" #default is true for backward compatibility
+ASTRA_SCAN_START_URL="https://api.getastra.com/webhooks/integrations/ci-cd"
+ASTRA_SCAN_STATUS_URL="https://api.getastra.com/webhooks/integrations/ci-cd/scan-status"
 ASTRA_AUDIT_MODE="${ASTRA_AUDIT_MODE:-automated}"
 ASTRA_SCAN_TYPE="${ASTRA_SCAN_TYPE:-lightning}"
 ASTRA_JOB_EXIT_STRATEGY="${ASTRA_JOB_EXIT_STRATEGY:-always_pass}"
@@ -12,102 +13,75 @@ ASTRA_JOB_EXIT_CRITERION="${ASTRA_JOB_EXIT_CRITERION:-severityCount[\\\"high\\\"
 ASTRA_SCAN_INVENTORY_COVERAGE="${ASTRA_SCAN_INVENTORY_COVERAGE:-full}"
 
 #astra secret scan variables
-ASTRA_SECRET_SCAN_ENABLED="${ASTRA_SECRET_SCAN_ENABLED:-false}" #default is false for backward compatibility
+ASTRA_SECRET_SCAN_ENABLED="${ASTRA_SECRET_SCAN_ENABLED:-false}" #default is false
 ASTRA_SECRET_SCAN_VERSION="${ASTRA_SECRET_SCAN_VERSION:-8.28.0}"
-ASTRA_SECRET_SCAN_METADATA_URL="https://api.getastra.dev/webhooks/integrations/ci-cd/secret-scan-metadata"
-ASTRA_SECRET_SCAN_REPORT_URL="https://api.getastra.dev/webhooks/integrations/ci-cd/secret-scan-report"
+ASTRA_SECRET_SCAN_REPORT_URL="https://api.getastra.com/webhooks/integrations/ci-cd/secret-scan-report"
 ASTRA_SECRET_SCAN_CONFIG_PATH="${ASTRA_SECRET_SCAN_CONFIG_PATH:-}"
 ASTRA_SECRET_SCAN_GIT_ROOT="${ASTRA_SECRET_SCAN_GIT_ROOT:-}"
 
 # Initialize git metadata variables
 if command -v git &> /dev/null; then
-    BRANCH_NAME="$(git branch --show-current 2>/dev/null || echo "${CI_COMMIT_REF_NAME:-${GITHUB_REF_NAME:-${BRANCH_NAME}}}")"
-    COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
-    COMMIT_MESSAGE=$(git log -1 --pretty=%B 2>/dev/null || echo "")
-    AUTHOR_NAME=$(git log -1 --pretty=%an 2>/dev/null || echo "")
-    AUTHOR_EMAIL=$(git log -1 --pretty=%ae 2>/dev/null || echo "")
-    COMMIT_DATE=$(git log -1 --pretty=%ad 2>/dev/null || echo "")
+    ASTRA_BRANCH_NAME="$(git branch --show-current 2>/dev/null || echo "${CI_COMMIT_REF_NAME:-${GITHUB_REF_NAME:-${ASTRA_BRANCH_NAME}}}")"
+    ASTRA_COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
+    ASTRA_COMMIT_MESSAGE=$(git log -1 --pretty=%B 2>/dev/null || echo "")
+    ASTRA_AUTHOR_NAME=$(git log -1 --pretty=%an 2>/dev/null || echo "")
+    ASTRA_AUTHOR_EMAIL=$(git log -1 --pretty=%ae 2>/dev/null || echo "")
+    ASTRA_COMMIT_DATE=$(git log -1 --pretty=%ad 2>/dev/null || echo "")
     
     # Only fetch git root if ASTRA_SECRET_SCAN_GIT_ROOT is not provided
     if [ -z "$ASTRA_SECRET_SCAN_GIT_ROOT" ]; then
-        GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
-        [ -z "$GIT_ROOT" ] && echo "⚠️ Warning: Unable to get git repository root"
+        ASTRA_GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+        [ -z "$ASTRA_GIT_ROOT" ] && echo "⚠️ Warning: Unable to get git repository root"
     else
-        GIT_ROOT="$ASTRA_SECRET_SCAN_GIT_ROOT"
-        echo "Using provided git root directory: $GIT_ROOT"
+        ASTRA_GIT_ROOT="$ASTRA_SECRET_SCAN_GIT_ROOT"
+        echo "Using provided git root directory: $ASTRA_GIT_ROOT"
     fi
 
     # Print warnings for missing data
-    [ -z "$BRANCH_NAME" ] && echo "⚠️ Warning: Unable to get branch name"
-    [ -z "$COMMIT_HASH" ] && echo "⚠️ Warning: Unable to get commit hash"
+    [ -z "$ASTRA_BRANCH_NAME" ] && echo "⚠️ Warning: Unable to get branch name"
+    [ -z "$ASTRA_COMMIT_HASH" ] && echo "⚠️ Warning: Unable to get commit hash"
+
+    # Prepare vcsMetadata JSON string
+    ASTRA_VCS_METADATA=$(cat <<EOF
+    {
+        "branchName": "$ASTRA_BRANCH_NAME",
+        "commitHash": "$ASTRA_COMMIT_HASH",
+        "commitMessage": "$ASTRA_COMMIT_MESSAGE",
+        "authorName": "$ASTRA_AUTHOR_NAME",
+        "authorEmail": "$ASTRA_AUTHOR_EMAIL",
+        "date": "$ASTRA_COMMIT_DATE"
+    }
+EOF
+    )
+    echo "VCS Metadata prepared: $ASTRA_VCS_METADATA"
 else
     echo "⚠️ Warning: git command not found"
-    BRANCH_NAME=""
-    COMMIT_HASH=""
-    COMMIT_MESSAGE=""
-    AUTHOR_NAME=""
-    AUTHOR_EMAIL=""
-    COMMIT_DATE=""
+    ASTRA_BRANCH_NAME=""
+    ASTRA_COMMIT_HASH=""
+    ASTRA_COMMIT_MESSAGE=""
+    ASTRA_AUTHOR_NAME=""
+    ASTRA_AUTHOR_EMAIL=""
+    ASTRA_COMMIT_DATE=""
     
     # If git command not found but ASTRA_SECRET_SCAN_GIT_ROOT is provided, use it
     if [ -n "$ASTRA_SECRET_SCAN_GIT_ROOT" ]; then
-        GIT_ROOT="$ASTRA_SECRET_SCAN_GIT_ROOT"
-        echo "Using provided git root directory: $GIT_ROOT"
+        ASTRA_GIT_ROOT="$ASTRA_SECRET_SCAN_GIT_ROOT"
+        echo "Using provided git root directory: $ASTRA_GIT_ROOT"
     else
-        GIT_ROOT=""
+        ASTRA_GIT_ROOT=""
         echo "⚠️ Warning: No git root directory available"
     fi
+
+    #keep vcsMetadata as empty json object
+    ASTRA_VCS_METADATA="{}"
 fi
-
-function sendGitMetadataToAstra() {
-    echo "Getting git metadata..."
-
-    echo "Repository Info:"
-    echo "Branch name: $BRANCH_NAME"
-    echo "Commit hash: $COMMIT_HASH"
-    echo "Commit message: $COMMIT_MESSAGE"
-    echo "Author name: $AUTHOR_NAME"
-    echo "Author email: $AUTHOR_EMAIL"
-    echo "Date: $COMMIT_DATE"
-
-    # Return the metadata as a JSON string
-    request_body="{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"projectId\":\"$ASTRA_PROJECT_ID\", \"branchName\":\"$BRANCH_NAME\", \"commitHash\":\"$COMMIT_HASH\", \"commitMessage\":\"$COMMIT_MESSAGE\", \"authorName\":\"$AUTHOR_NAME\", \"authorEmail\":\"$AUTHOR_EMAIL\", \"date\":\"$COMMIT_DATE\"}"
-    
-    response=$(curl -s -o response.txt -w "%{http_code}" \
-    --user-agent "Astra Pentest Trigger Script/1.1" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json" \
-    --request POST \
-    --data "$request_body" \
-    "$ASTRA_SECRET_SCAN_METADATA_URL")
-
-    status_code=$(tail -n1 <<< "$response")
-
-    if [[ "$status_code" == "200" ]]; then
-        echo "✅ The Astra Secret Scan metadata has been successfully sent to Astra Dashboard."
-        echo ""
-        echo "Webhook response:"
-        echo ""
-        cat response.txt
-        echo ""
-    else
-        echo "🟡 Astra Secret Scan metadata sending failed. HTTP status code: $status_code"
-        echo ""
-        echo "Webhook response:"
-        echo ""
-        cat response.txt
-        echo ""        
-        return 0
-    fi
-
-}
 
 function runAstraSecretScan() {
     # Where to stash the binary
     BIN_PATH="${HOME}/.astra"    
 
     # Check if we have a valid git root
-    if [ -z "$GIT_ROOT" ]; then
+    if [ -z "$ASTRA_GIT_ROOT" ]; then
         echo "❌ Error: Could not determine git repository root directory"
         return 0
     fi
@@ -120,7 +94,7 @@ function runAstraSecretScan() {
 
     # Download & unpack on cache miss
     if [[ ! -x "$BIN_PATH/astra-secret-scan" ]]; then
-        echo "Downloading astra-secret-scan $ASTRA_SECRET_SCAN_VERSION for $OS/$ARCH…"
+        echo "Cache miss, Downloading astra-secret-scan $ASTRA_SECRET_SCAN_VERSION for $OS/$ARCH…"
         DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/download/v${ASTRA_SECRET_SCAN_VERSION}/gitleaks_${ASTRA_SECRET_SCAN_VERSION}_${OS}_${ARCH}.tar.gz"
         echo "Download URL: $DOWNLOAD_URL"
         
@@ -144,6 +118,8 @@ function runAstraSecretScan() {
             echo "❌ Error: Binary not found or not executable at $BIN_PATH/astra-secret-scan"
             return 0
         fi
+    else
+        echo "Cache hit, using cached astra-secret-scan $ASTRA_SECRET_SCAN_VERSION for $OS/$ARCH"
     fi
 
     # Run the scan against the current directory
@@ -157,13 +133,15 @@ function runAstraSecretScan() {
     # If ASTRA_SECRET_SCAN_CONFIG is not set, invoke the scan without a config file
     if [ -z "$ASTRA_SECRET_SCAN_CONFIG_PATH" ]; then
         echo "No config file provided, invoking astra-secret-scan without a config file"
-        echo "Scanning git repository at: $GIT_ROOT"
-        error_output=$("$BIN_PATH/astra-secret-scan" dir "$GIT_ROOT" \
+        echo "Scanning git repository at: $ASTRA_GIT_ROOT"
+        error_output=$("$BIN_PATH/astra-secret-scan" dir "$ASTRA_GIT_ROOT" \
         --report-format json \
         --no-banner \
         --max-target-megabytes 1 \
         --log-level error \
         --exit-code 0 \
+        --max-decode-depth 1 \
+        --redact 50 \
         --report-path astra-secret-scan-report.json 2>&1)
         exit_code=$?
         if [ $exit_code -ne 0 ]; then
@@ -173,14 +151,16 @@ function runAstraSecretScan() {
         fi
     else
         echo "Using config file: $ASTRA_SECRET_SCAN_CONFIG_PATH"
-        echo "Scanning git repository at: $GIT_ROOT"
-        error_output=$("$BIN_PATH/astra-secret-scan" dir "$GIT_ROOT" \
+        echo "Scanning git repository at: $ASTRA_GIT_ROOT"
+        error_output=$("$BIN_PATH/astra-secret-scan" dir "$ASTRA_GIT_ROOT" \
         --config "$ASTRA_SECRET_SCAN_CONFIG_PATH" \
         --report-format json \
         --no-banner \
         --max-target-megabytes 1 \
         --log-level error \
         --exit-code 0 \
+        --max-decode-depth 1 \
+        --redact 50 \
         --report-path astra-secret-scan-report.json 2>&1)
         exit_code=$?
         if [ $exit_code -ne 0 ]; then
@@ -208,9 +188,9 @@ function runAstraSecretScan() {
     cat astra-secret-scan-report.json
 
     #Send scan report to Astra Dashboard
-    request_body="{\"branchName\":\"$BRANCH_NAME\", \"commitHash\":\"$COMMIT_HASH\", \"commitMessage\":\"$COMMIT_MESSAGE\", \"authorName\":\"$AUTHOR_NAME\", \"authorEmail\":\"$AUTHOR_EMAIL\", \"date\":\"$COMMIT_DATE\", \"report\":$REPORT_CONTENT}"
-    
-    response=$(curl -s -o response.txt -w "%{http_code}" \
+    request_body="{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"projectId\":\"$ASTRA_PROJECT_ID\", \"mode\":\"$ASTRA_AUDIT_MODE\", \"inventoryCoverage\":\"$ASTRA_SCAN_INVENTORY_COVERAGE\", \"automatedScanType\":\"$ASTRA_SCAN_TYPE\", \"targetScopeUri\":\"$ASTRA_TARGET_SCOPE_URI\", \"vcsMetadata\":$ASTRA_VCS_METADATA, \"report\":$REPORT_CONTENT}"
+   
+    response=$(curl -s -o webhook_response.txt -w "%{http_code}" \
     --user-agent "Astra Pentest Trigger Script/1.1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -227,7 +207,7 @@ function runAstraSecretScan() {
         echo ""
         echo "Webhook response:"
         echo ""
-        cat response.txt
+        cat webhook_response.txt
         echo ""
         rm -f astra-secret-scan-report.json
         return 0
@@ -254,7 +234,8 @@ function astraPentestTrigger() {
         fi
     fi
 
-    response=$(curl -s -o response.txt -w "%{http_code}" --user-agent "Astra Pentest Trigger Script/1.1" --header "Content-Type: application/json" --header "Accept: application/json" --request POST --data "{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"projectId\":\"$ASTRA_PROJECT_ID\", \"mode\":\"$ASTRA_AUDIT_MODE\", \"inventoryCoverage\":\"$ASTRA_SCAN_INVENTORY_COVERAGE\", \"automatedScanType\":\"$ASTRA_SCAN_TYPE\", \"targetScopeUri\":\"$ASTRA_TARGET_SCOPE_URI\"}" "$ASTRA_SCAN_START_URL")
+    # Send request with vcsMetadata
+    response=$(curl -s -o response.txt -w "%{http_code}" --user-agent "Astra Pentest Trigger Script/1.1" --header "Content-Type: application/json" --header "Accept: application/json" --request POST --data "{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"projectId\":\"$ASTRA_PROJECT_ID\", \"mode\":\"$ASTRA_AUDIT_MODE\", \"inventoryCoverage\":\"$ASTRA_SCAN_INVENTORY_COVERAGE\", \"automatedScanType\":\"$ASTRA_SCAN_TYPE\", \"targetScopeUri\":\"$ASTRA_TARGET_SCOPE_URI\", \"vcsMetadata\":$ASTRA_VCS_METADATA}" "$ASTRA_SCAN_START_URL")
     status_code=$(tail -n1 <<< "$response")
 
     if [[ "$status_code" == "200" ]]; then
@@ -278,12 +259,13 @@ function astraPentestTrigger() {
 
     if [[ "$ASTRA_JOB_EXIT_STRATEGY" == "always_pass" ]]; then
         echo "The scan is currently in progress, and you can review any detected vulnerabilities in the Astra dashboard. As the ASTRA_JOB_EXIT_STRATEGY is set to always_pass, this job will not be blocked."
-        return 0
+        exit 0
     fi
 
     json_data="{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"auditId\":\"$audit_id\",\"jobExitCriterion\":\"$ASTRA_JOB_EXIT_CRITERION\"}"
 
     for ((retry=0; retry<ASTRA_JOB_EXIT_REFETCH_MAX_RETRIES; retry++)); do
+
         scan_status=$(curl -s -o scan_status_response.txt -w "%{http_code}" \
         --user-agent "Astra Pentest Trigger Script/1.1" \
         --header "Content-Type: application/json" \
@@ -292,6 +274,7 @@ function astraPentestTrigger() {
         "$ASTRA_SCAN_STATUS_URL")
 
         if [[ "$scan_status" == "200" ]]; then
+
             audit_progress=$(awk '/"auditProgress"/{print $2}' RS=, FS=: scan_status_response.txt | tr -d '"' | cut -d'}' -f1)
             exit_criteria_evaluation=$(awk '/"exitCriteriaEvaluation"/{print $2}' RS=, FS=: scan_status_response.txt | tr -d '"' | cut -d'}' -f1)
 
@@ -304,7 +287,7 @@ function astraPentestTrigger() {
 
             if [[ "$audit_progress" == "reported" || "$audit_progress" == "reaudit" || "$audit_progress" == "completed" ]]; then
                 echo "✅ The scan has been successfully completed, without matching the exit criteria."
-                return 0
+                exit 0
             fi
 
             echo "🔍 The scan is currently in progress, and its status has just been refreshed."
@@ -317,19 +300,20 @@ function astraPentestTrigger() {
     echo "🔵 The scan is currently underway, but we are exiting this job as the ASTRA_JOB_EXIT_REFETCH_MAX_RETRIES limit has been reached."
 }
 
-#mandatory metadata to be sent back to Astra Dashboard
-sendGitMetadataToAstra
+# Trigger Astra DAST Scan first
+if [ "${ASTRA_DAST_SCAN_ENABLED}" = "true" ]; then
+    echo "Starting Astra DAST scan..."
+    astraPentestTrigger
+else
+    echo "Astra DAST scan is disabled, skipping triggering DAST scan..."
+fi
 
-# First run gitleaks if enabled by checking if ASTRA_GITLEAKS_ENABLED is set to true
+# Then run gitleaks if enabled
 if [ "${ASTRA_SECRET_SCAN_ENABLED}" = "true" ]; then
     echo "Secret scan is enabled with version ${ASTRA_SECRET_SCAN_VERSION}, running secret scan..."
     runAstraSecretScan
 else
     echo "Secret scan is disabled, skipping secret scan..."
 fi
-
-# Then run Astra Pentest
-echo "Starting Astra Pentest scan..."
-astraPentestTrigger
 
 exit 0

@@ -2,8 +2,8 @@
 
 #astra pentest trigger variables
 ASTRA_DAST_SCAN_ENABLED="${ASTRA_DAST_SCAN_ENABLED:-true}" #default is true for backward compatibility
-ASTRA_SCAN_START_URL="https://api.getastra.com/webhooks/integrations/ci-cd"
-ASTRA_SCAN_STATUS_URL="https://api.getastra.com/webhooks/integrations/ci-cd/scan-status"
+ASTRA_SCAN_START_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd"
+ASTRA_SCAN_STATUS_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/scan-status"
 ASTRA_AUDIT_MODE="${ASTRA_AUDIT_MODE:-automated}"
 ASTRA_SCAN_TYPE="${ASTRA_SCAN_TYPE:-lightning}"
 ASTRA_JOB_EXIT_STRATEGY="${ASTRA_JOB_EXIT_STRATEGY:-always_pass}"
@@ -15,7 +15,7 @@ ASTRA_SCAN_INVENTORY_COVERAGE="${ASTRA_SCAN_INVENTORY_COVERAGE:-full}"
 #astra secret scan variables
 ASTRA_SECRET_SCAN_ENABLED="${ASTRA_SECRET_SCAN_ENABLED:-false}" #default is false
 ASTRA_SECRET_SCAN_VERSION="${ASTRA_SECRET_SCAN_VERSION:-8.28.0}"
-ASTRA_SECRET_SCAN_REPORT_URL="https://api.getastra.com/webhooks/integrations/ci-cd/secret-scan-report"
+ASTRA_SECRET_SCAN_REPORT_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/secret-scan-report"
 ASTRA_SECRET_SCAN_CONFIG_PATH="${ASTRA_SECRET_SCAN_CONFIG_PATH:-}"
 ASTRA_SECRET_SCAN_GIT_ROOT="${ASTRA_SECRET_SCAN_GIT_ROOT:-}"
 

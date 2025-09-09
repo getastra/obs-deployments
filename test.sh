@@ -194,8 +194,10 @@ EOF
     --header "Accept: application/json" \
     --request POST \
     --data @"$astra_temp_file" \
-    "$ASTRA_SCAN_START_URL")
+    "$ASTRA_SECRET_SCAN_REPORT_URL")
     status_code=$(tail -n1 <<< "$response")
+
+    cat /home/runner/work/obs-integrations/obs-integrations/integrations/astra-cli/pkg/parser/testdata/har/insomnia.har
 
     if [[ "$status_code" == "200" ]]; then
         echo "✅ The Astra Secret Scan report has been successfully sent to Astra Dashboard."

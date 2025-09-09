@@ -144,7 +144,7 @@ function runAstraSecretScan() {
     if [ -z "$ASTRA_SECRET_SCAN_CONFIG_PATH" ]; then
         echo "No config file provided, invoking astra-secret-scan without a config file"
         echo "Scanning git repository at: $ASTRA_GIT_ROOT"
-        error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" --report-format=json --no-banner --max-target-megabytes=1 --log-level=error --exit-code=0 --max-decode-depth=1 --report-path=astra-secret-scan-report.json 2>&1)
+        error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" --report-format=json --no-banner --max-target-megabytes=1 --exit-code=0 --max-decode-depth=1 --report-path=astra-secret-scan-report.json)
         exit_code=$?
         if [ $exit_code -ne 0 ]; then
             echo "❌ Error: Astra Secret Scan without config file failed to complete. Exit code: $exit_code"

@@ -1,9 +1,8 @@
 #!/bin/bash
 
 #astra pentest trigger variables
-ASTRA_DAST_SCAN_ENABLED="${ASTRA_DAST_SCAN_ENABLED:-true}" #default is true for backward compatibility
-ASTRA_SCAN_START_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd"
-ASTRA_SCAN_STATUS_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/scan-status"
+ASTRA_SCAN_START_URL="https://api.getastra.com/webhooks/integrations/ci-cd"
+ASTRA_SCAN_STATUS_URL="https://api.getastra.com/webhooks/integrations/ci-cd/scan-status"
 ASTRA_AUDIT_MODE="${ASTRA_AUDIT_MODE:-automated}"
 ASTRA_SCAN_TYPE="${ASTRA_SCAN_TYPE:-lightning}"
 ASTRA_JOB_EXIT_STRATEGY="${ASTRA_JOB_EXIT_STRATEGY:-always_pass}"
@@ -13,9 +12,9 @@ ASTRA_JOB_EXIT_CRITERION="${ASTRA_JOB_EXIT_CRITERION:-severityCount[\\\"high\\\"
 ASTRA_SCAN_INVENTORY_COVERAGE="${ASTRA_SCAN_INVENTORY_COVERAGE:-full}"
 
 #astra secret scan variables
-ASTRA_SECRET_SCAN_ENABLED="${ASTRA_SECRET_SCAN_ENABLED:-false}" #default is false
-ASTRA_SECRET_SCAN_VERSION="${ASTRA_SECRET_SCAN_VERSION:-8.28.0}"
-ASTRA_SECRET_SCAN_REPORT_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/gitleaks"
+LATEST_BINARY_VERSION="8.28.0"
+ASTRA_SECRET_SCAN_BINARY_VERSION="${ASTRA_SECRET_SCAN_BINARY_VERSION}"
+ASTRA_SECRET_SCAN_REPORT_URL="https://api.getastra.com/webhooks/integrations/ci-cd/secret-scan-report"
 ASTRA_SECRET_SCAN_CONFIG_PATH="${ASTRA_SECRET_SCAN_CONFIG_PATH:-}"
 ASTRA_SECRET_SCAN_GIT_ROOT="${ASTRA_SECRET_SCAN_GIT_ROOT:-}"
 
@@ -92,10 +91,21 @@ function runAstraSecretScan() {
     if [[ "$ARCH" == "x86_64" ]]; then ARCH="x64"; fi
     if [[ "$ARCH" == "aarch64" ]]; then ARCH="arm64"; fi
 
+    # Handle version logic
+    if [[ -z "$ASTRA_SECRET_SCAN_BINARY_VERSION" || "$ASTRA_SECRET_SCAN_BINARY_VERSION" == "latest" ]]; then
+        # If empty, use default version
+        DOWNLOAD_VERSION="$LATEST_BINARY_VERSION"
+        BINARY_NAME="astra-secret-scan-latest"
+    else
+        # Use the specific version provided
+        DOWNLOAD_VERSION="$ASTRA_SECRET_SCAN_BINARY_VERSION"
+        BINARY_NAME="astra-secret-scan-$ASTRA_SECRET_SCAN_BINARY_VERSION"
+    fi
+
     # Download & unpack on cache miss
-    if [[ ! -x "$BIN_PATH/astra-secret-scan" ]]; then
-        echo "Cache miss, Downloading astra-secret-scan $ASTRA_SECRET_SCAN_VERSION for $OS/$ARCH…"
-        DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/download/v${ASTRA_SECRET_SCAN_VERSION}/gitleaks_${ASTRA_SECRET_SCAN_VERSION}_${OS}_${ARCH}.tar.gz"
+    if [[ ! -x "$BIN_PATH/$BINARY_NAME" ]]; then
+        echo "Cache miss, Downloading $BINARY_NAME for $OS/$ARCH…"
+        DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/download/v${DOWNLOAD_VERSION}/gitleaks_${DOWNLOAD_VERSION}_${OS}_${ARCH}.tar.gz"
         echo "Download URL: $DOWNLOAD_URL"
         
         # Create directory with error handling
@@ -110,16 +120,16 @@ function runAstraSecretScan() {
             return 0
         fi
 
-        # Rename the binary to astra-secret-scan
-        mv "$BIN_PATH/gitleaks" "$BIN_PATH/astra-secret-scan"
+        # Rename the binary to the appropriate name
+        mv "$BIN_PATH/gitleaks" "$BIN_PATH/$BINARY_NAME"
 
         # Verify the binary exists and is executable
-        if [[ ! -x "$BIN_PATH/astra-secret-scan" ]]; then
-            echo "❌ Error: Binary not found or not executable at $BIN_PATH/astra-secret-scan"
+        if [[ ! -x "$BIN_PATH/$BINARY_NAME" ]]; then
+            echo "❌ Error: Binary not found or not executable at $BIN_PATH/$BINARY_NAME"
             return 0
         fi
     else
-        echo "Cache hit, using cached astra-secret-scan $ASTRA_SECRET_SCAN_VERSION for $OS/$ARCH"
+        echo "Cache hit, using cached $BINARY_NAME for $OS/$ARCH"
     fi
 
     # Run the scan against the current directory
@@ -134,15 +144,15 @@ function runAstraSecretScan() {
     if [ -z "$ASTRA_SECRET_SCAN_CONFIG_PATH" ]; then
         echo "No config file provided, invoking astra-secret-scan without a config file"
         echo "Scanning git repository at: $ASTRA_GIT_ROOT"
-        error_output=$("$BIN_PATH/astra-secret-scan" dir "$ASTRA_GIT_ROOT" \
-        --report-format json \
+        error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" \
+        --report-format=json \
         --no-banner \
-        --max-target-megabytes 1 \
-        --log-level error \
-        --exit-code 0 \
-        --max-decode-depth 1 \
-        --redact 50 \
-        --report-path astra-secret-scan-report.json 2>&1)
+        --max-target-megabytes=1 \
+        --log-level=error \
+        --exit-code=0 \
+        --max-decode-depth=1 \
+        --redact=50 \
+        --report-path=astra-secret-scan-report.json 2>&1)
         exit_code=$?
         if [ $exit_code -ne 0 ]; then
             echo "❌ Error: Astra Secret Scan without config file failed to complete. Exit code: $exit_code"
@@ -152,16 +162,16 @@ function runAstraSecretScan() {
     else
         echo "Using config file: $ASTRA_SECRET_SCAN_CONFIG_PATH"
         echo "Scanning git repository at: $ASTRA_GIT_ROOT"
-        error_output=$("$BIN_PATH/astra-secret-scan" dir "$ASTRA_GIT_ROOT" \
-        --config "$ASTRA_SECRET_SCAN_CONFIG_PATH" \
-        --report-format json \
+        error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" \
+        --config="$ASTRA_SECRET_SCAN_CONFIG_PATH" \
+        --report-format=json \
         --no-banner \
-        --max-target-megabytes 1 \
-        --log-level error \
-        --exit-code 0 \
-        --max-decode-depth 1 \
-        --redact 50 \
-        --report-path astra-secret-scan-report.json 2>&1)
+        --max-target-megabytes=1 \
+        --log-level=error \
+        --exit-code=0 \
+        --max-decode-depth=1 \
+        --redact=50 \
+        --report-path=astra-secret-scan-report.json 2>&1)
         exit_code=$?
         if [ $exit_code -ne 0 ]; then
             echo "❌ Error: Astra Secret Scan with config file failed to complete. Exit code: $exit_code"
@@ -259,7 +269,7 @@ function astraPentestTrigger() {
 
     if [[ "$ASTRA_JOB_EXIT_STRATEGY" == "always_pass" ]]; then
         echo "The scan is currently in progress, and you can review any detected vulnerabilities in the Astra dashboard. As the ASTRA_JOB_EXIT_STRATEGY is set to always_pass, this job will not be blocked."
-        return 0
+        exit 0
     fi
 
     json_data="{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"auditId\":\"$audit_id\",\"jobExitCriterion\":\"$ASTRA_JOB_EXIT_CRITERION\"}"
@@ -281,13 +291,13 @@ function astraPentestTrigger() {
             if [[ "$ASTRA_JOB_EXIT_STRATEGY" == "fail_when_vulnerable" ]]; then
                 if [[ "$exit_criteria_evaluation" == "true" ]]; then
                     echo "⛔ Vulnerabilities have been detected according to the criteria defined in ASTRA_JOB_EXIT_CRITERION. Please review the Astra dashboard for a detailed list of vulnerabilities. Exiting the CI/CD job now..."
-                    return 0
+                    exit 1
                 fi
             fi
 
             if [[ "$audit_progress" == "reported" || "$audit_progress" == "reaudit" || "$audit_progress" == "completed" ]]; then
                 echo "✅ The scan has been successfully completed, without matching the exit criteria."
-                return 0
+                exit 0
             fi
 
             echo "🔍 The scan is currently in progress, and its status has just been refreshed."
@@ -300,20 +310,14 @@ function astraPentestTrigger() {
     echo "🔵 The scan is currently underway, but we are exiting this job as the ASTRA_JOB_EXIT_REFETCH_MAX_RETRIES limit has been reached."
 }
 
-# Trigger Astra DAST Scan first
-if [ "${ASTRA_DAST_SCAN_ENABLED}" = "true" ]; then
-    echo "Starting Astra DAST scan..."
-    astraPentestTrigger
-else
-    echo "Astra DAST scan is disabled, skipping triggering DAST scan..."
-fi
-
-# Then run gitleaks if enabled
-if [ "${ASTRA_SECRET_SCAN_ENABLED}" = "true" ]; then
-    echo "Secret scan is enabled with version ${ASTRA_SECRET_SCAN_VERSION}, running secret scan..."
+# Check ASTRA_SCAN_TYPE to determine which scan to run
+if [ "${ASTRA_SCAN_TYPE}" = "secret-scan" ]; then
+    echo "ASTRA_SCAN_TYPE is set to 'secret-scan', running secret scan with version ${ASTRA_SECRET_SCAN_BINARY_VERSION}..."
     runAstraSecretScan
 else
-    echo "Secret scan is disabled, skipping secret scan..."
+    # For any other scan type, run the pentest trigger
+    echo "Starting Astra DAST scan with type: ${ASTRA_SCAN_TYPE}..."
+    astraPentestTrigger
 fi
 
 exit 0

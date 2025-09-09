@@ -12,7 +12,7 @@ ASTRA_JOB_EXIT_CRITERION="${ASTRA_JOB_EXIT_CRITERION:-severityCount[\\\"high\\\"
 ASTRA_SCAN_INVENTORY_COVERAGE="${ASTRA_SCAN_INVENTORY_COVERAGE:-full}"
 
 #astra secret scan variables
-ASTRA_SECRET_LATEST_BINARY_VERSION="8.27.2"
+ASTRA_SECRET_LATEST_BINARY_VERSION="8.28.0"
 ASTRA_SECRET_SCAN_BINARY_VERSION="${ASTRA_SECRET_SCAN_BINARY_VERSION}"
 ASTRA_SECRET_SCAN_REPORT_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/gitleaks"
 ASTRA_SECRET_SCAN_CONFIG_PATH="${ASTRA_SECRET_SCAN_CONFIG_PATH:-}"
@@ -144,8 +144,15 @@ function runAstraSecretScan() {
     if [ -z "$ASTRA_SECRET_SCAN_CONFIG_PATH" ]; then
         echo "No config file provided, invoking astra-secret-scan without a config file"
         echo "Scanning git repository at: $ASTRA_GIT_ROOT"
-        $BIN_PATH/$BINARY_NAME dir "$ASTRA_GIT_ROOT" --exit-code 0 --max-target-megabytes 1 --report-format=json --report-path=astra-secret-scan-report.json
-        #error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" --report-format=json --no-banner --max-target-megabytes=1 --exit-code=0 --max-decode-depth=1 --report-path=astra-secret-scan-report.json -v)
+        error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" \
+        --report-format=json \
+        --no-banner \
+        --max-target-megabytes=1 \
+        --log-level=error \
+        --exit-code=0 \
+        --max-decode-depth=1 \
+        --redact=50 \
+        --report-path=astra-secret-scan-report.json 2>&1)
         exit_code=$?
         if [ $exit_code -ne 0 ]; then
             echo "❌ Error: Astra Secret Scan without config file failed to complete. Exit code: $exit_code"
@@ -155,7 +162,16 @@ function runAstraSecretScan() {
     else
         echo "Using config file: $ASTRA_SECRET_SCAN_CONFIG_PATH"
         echo "Scanning git repository at: $ASTRA_GIT_ROOT"
-        error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" --config="$ASTRA_SECRET_SCAN_CONFIG_PATH" --report-format=json --no-banner --max-target-megabytes=1 --exit-code=0 --max-decode-depth=1 --report-path=astra-secret-scan-report.json)
+        error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" \
+        --config="$ASTRA_SECRET_SCAN_CONFIG_PATH" \
+        --report-format=json \
+        --no-banner \
+        --max-target-megabytes=1 \
+        --log-level=error \
+        --exit-code=0 \
+        --max-decode-depth=1 \
+        --redact=50 \
+        --report-path=astra-secret-scan-report.json 2>&1)
         exit_code=$?
         if [ $exit_code -ne 0 ]; then
             echo "❌ Error: Astra Secret Scan with config file failed to complete. Exit code: $exit_code"
@@ -197,8 +213,6 @@ EOF
     "$ASTRA_SECRET_SCAN_REPORT_URL")
     status_code=$(tail -n1 <<< "$response")
 
-    cat /home/runner/work/obs-integrations/obs-integrations/integrations/astra-cli/pkg/parser/testdata/har/insomnia.har
-
     if [[ "$status_code" == "200" ]]; then
         echo "✅ The Astra Secret Scan report has been successfully sent to Astra Dashboard."
         echo ""
@@ -208,6 +222,7 @@ EOF
         cat webhook_response.txt
         echo ""
         cat "vulnerabilitesPageLink: https://my.getastra.com/scans/$audit_id"
+        echo ""
         rm -f astra-secret-scan-report.json
     else
         echo "🟡 Astra Secret Scan report sending failed. HTTP status code: $status_code"

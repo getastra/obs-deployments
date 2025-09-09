@@ -199,10 +199,12 @@ EOF
     if [[ "$status_code" == "200" ]]; then
         echo "✅ The Astra Secret Scan report has been successfully sent to Astra Dashboard."
         echo ""
+        audit_id=$(awk '/"auditId"/{print $2}' RS=, FS=: webhook_response.txt | tr -d '"' | cut -d'}' -f1)
         echo "Webhook response:"
         echo ""
         cat webhook_response.txt
         echo ""
+        cat "vulnerabilitesPageLink: https://my.getastra.com/scans/$audit_id"
         rm -f astra-secret-scan-report.json
     else
         echo "🟡 Astra Secret Scan report sending failed. HTTP status code: $status_code"

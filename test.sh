@@ -259,7 +259,7 @@ function astraPentestTrigger() {
 
     if [[ "$ASTRA_JOB_EXIT_STRATEGY" == "always_pass" ]]; then
         echo "The scan is currently in progress, and you can review any detected vulnerabilities in the Astra dashboard. As the ASTRA_JOB_EXIT_STRATEGY is set to always_pass, this job will not be blocked."
-        exit 0
+        return 0
     fi
 
     json_data="{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"auditId\":\"$audit_id\",\"jobExitCriterion\":\"$ASTRA_JOB_EXIT_CRITERION\"}"
@@ -281,13 +281,13 @@ function astraPentestTrigger() {
             if [[ "$ASTRA_JOB_EXIT_STRATEGY" == "fail_when_vulnerable" ]]; then
                 if [[ "$exit_criteria_evaluation" == "true" ]]; then
                     echo "⛔ Vulnerabilities have been detected according to the criteria defined in ASTRA_JOB_EXIT_CRITERION. Please review the Astra dashboard for a detailed list of vulnerabilities. Exiting the CI/CD job now..."
-                    exit 1
+                    return 0
                 fi
             fi
 
             if [[ "$audit_progress" == "reported" || "$audit_progress" == "reaudit" || "$audit_progress" == "completed" ]]; then
                 echo "✅ The scan has been successfully completed, without matching the exit criteria."
-                exit 0
+                return 0
             fi
 
             echo "🔍 The scan is currently in progress, and its status has just been refreshed."

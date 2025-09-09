@@ -201,7 +201,7 @@ function runAstraSecretScan() {
     #Use temporary file to avoid "Argument list too long" error with large JSON payloads
     astra_temp_file=$(mktemp)
     cat > "$astra_temp_file" <<EOF
-{"accessToken":"$ASTRA_ACCESS_TOKEN","projectId":"$ASTRA_PROJECT_ID", "mode":"$ASTRA_AUDIT_MODE", "inventoryCoverage":"$ASTRA_SCAN_INVENTORY_COVERAGE", "automatedScanType":"$ASTRA_SCAN_TYPE", "targetScopeUri":"$ASTRA_TARGET_SCOPE_URI", "vcsMetadata":$ASTRA_VCS_METADATA, "report":$REPORT_CONTENT}
+{"version":"1.0.0","accessToken":"$ASTRA_ACCESS_TOKEN","projectId":"$ASTRA_PROJECT_ID", "mode":"$ASTRA_AUDIT_MODE", "automatedScanType":"$ASTRA_SCAN_TYPE", "vcsMetadata":$ASTRA_VCS_METADATA, "report":$REPORT_CONTENT}
 EOF
    
     response=$(curl -s -o webhook_response.txt -w "%{http_code}" \

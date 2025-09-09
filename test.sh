@@ -15,7 +15,7 @@ ASTRA_SCAN_INVENTORY_COVERAGE="${ASTRA_SCAN_INVENTORY_COVERAGE:-full}"
 #astra secret scan variables
 ASTRA_SECRET_SCAN_ENABLED="${ASTRA_SECRET_SCAN_ENABLED:-false}" #default is false
 ASTRA_SECRET_SCAN_VERSION="${ASTRA_SECRET_SCAN_VERSION:-8.28.0}"
-ASTRA_SECRET_SCAN_REPORT_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/secret-scan-report"
+ASTRA_SECRET_SCAN_REPORT_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/gitleaks"
 ASTRA_SECRET_SCAN_CONFIG_PATH="${ASTRA_SECRET_SCAN_CONFIG_PATH:-}"
 ASTRA_SECRET_SCAN_GIT_ROOT="${ASTRA_SECRET_SCAN_GIT_ROOT:-}"
 

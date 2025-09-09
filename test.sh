@@ -191,7 +191,7 @@ function runAstraSecretScan() {
     request_body="{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"projectId\":\"$ASTRA_PROJECT_ID\", \"mode\":\"$ASTRA_AUDIT_MODE\", \"inventoryCoverage\":\"$ASTRA_SCAN_INVENTORY_COVERAGE\", \"automatedScanType\":\"$ASTRA_SCAN_TYPE\", \"targetScopeUri\":\"$ASTRA_TARGET_SCOPE_URI\", \"vcsMetadata\":$ASTRA_VCS_METADATA, \"report\":$REPORT_CONTENT}"
    
     response=$(curl -s -o webhook_response.txt -w "%{http_code}" \
-    --user-agent "PostmanRuntime/7.43.0" \
+    --user-agent "Astra Pentest Trigger Script/1.1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --request POST \
@@ -235,7 +235,7 @@ function astraPentestTrigger() {
     fi
 
     # Send request with vcsMetadata
-    response=$(curl -s -o response.txt -w "%{http_code}" --user-agent "PostmanRuntime/7.43.0" --header "Content-Type: application/json" --header "Accept: application/json" --request POST --data "{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"projectId\":\"$ASTRA_PROJECT_ID\", \"mode\":\"$ASTRA_AUDIT_MODE\", \"inventoryCoverage\":\"$ASTRA_SCAN_INVENTORY_COVERAGE\", \"automatedScanType\":\"$ASTRA_SCAN_TYPE\", \"targetScopeUri\":\"$ASTRA_TARGET_SCOPE_URI\", \"vcsMetadata\":$ASTRA_VCS_METADATA}" "$ASTRA_SCAN_START_URL")
+    response=$(curl -s -o response.txt -w "%{http_code}" --user-agent "Astra Pentest Trigger Script/1.1" --header "Content-Type: application/json" --header "Accept: application/json" --request POST --data "{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"projectId\":\"$ASTRA_PROJECT_ID\", \"mode\":\"$ASTRA_AUDIT_MODE\", \"inventoryCoverage\":\"$ASTRA_SCAN_INVENTORY_COVERAGE\", \"automatedScanType\":\"$ASTRA_SCAN_TYPE\", \"targetScopeUri\":\"$ASTRA_TARGET_SCOPE_URI\", \"vcsMetadata\":$ASTRA_VCS_METADATA}" "$ASTRA_SCAN_START_URL")
     status_code=$(tail -n1 <<< "$response")
 
     if [[ "$status_code" == "200" ]]; then
@@ -267,7 +267,7 @@ function astraPentestTrigger() {
     for ((retry=0; retry<ASTRA_JOB_EXIT_REFETCH_MAX_RETRIES; retry++)); do
 
         scan_status=$(curl -s -o scan_status_response.txt -w "%{http_code}" \
-        --user-agent "PostmanRuntime/7.43.0" \
+        --user-agent "Astra Pentest Trigger Script/1.1" \
         --header "Content-Type: application/json" \
         --request POST \
         --data "$json_data" \

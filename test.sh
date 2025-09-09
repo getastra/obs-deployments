@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #astra pentest trigger variables
-ASTRA_SCAN_START_URL="https://api.getastra.com/webhooks/integrations/ci-cd"
-ASTRA_SCAN_STATUS_URL="https://api.getastra.com/webhooks/integrations/ci-cd/scan-status"
+ASTRA_SCAN_START_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd"
+ASTRA_SCAN_STATUS_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/scan-status"
 ASTRA_AUDIT_MODE="${ASTRA_AUDIT_MODE:-automated}"
 ASTRA_SCAN_TYPE="${ASTRA_SCAN_TYPE:-lightning}"
 ASTRA_JOB_EXIT_STRATEGY="${ASTRA_JOB_EXIT_STRATEGY:-always_pass}"
@@ -12,9 +12,9 @@ ASTRA_JOB_EXIT_CRITERION="${ASTRA_JOB_EXIT_CRITERION:-severityCount[\\\"high\\\"
 ASTRA_SCAN_INVENTORY_COVERAGE="${ASTRA_SCAN_INVENTORY_COVERAGE:-full}"
 
 #astra secret scan variables
-LATEST_BINARY_VERSION="8.28.0"
+ASTRA_SECRET_LATEST_BINARY_VERSION="8.28.0"
 ASTRA_SECRET_SCAN_BINARY_VERSION="${ASTRA_SECRET_SCAN_BINARY_VERSION}"
-ASTRA_SECRET_SCAN_REPORT_URL="https://api.getastra.com/webhooks/integrations/ci-cd/secret-scan-report"
+ASTRA_SECRET_SCAN_REPORT_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/secret-scan-report"
 ASTRA_SECRET_SCAN_CONFIG_PATH="${ASTRA_SECRET_SCAN_CONFIG_PATH:-}"
 ASTRA_SECRET_SCAN_GIT_ROOT="${ASTRA_SECRET_SCAN_GIT_ROOT:-}"
 
@@ -94,7 +94,7 @@ function runAstraSecretScan() {
     # Handle version logic
     if [[ -z "$ASTRA_SECRET_SCAN_BINARY_VERSION" || "$ASTRA_SECRET_SCAN_BINARY_VERSION" == "latest" ]]; then
         # If empty, use default version
-        DOWNLOAD_VERSION="$LATEST_BINARY_VERSION"
+        DOWNLOAD_VERSION="$ASTRA_SECRET_LATEST_BINARY_VERSION"
         BINARY_NAME="astra-secret-scan-latest"
     else
         # Use the specific version provided
@@ -198,14 +198,18 @@ function runAstraSecretScan() {
     cat astra-secret-scan-report.json
 
     #Send scan report to Astra Dashboard
-    request_body="{\"accessToken\":\"$ASTRA_ACCESS_TOKEN\",\"projectId\":\"$ASTRA_PROJECT_ID\", \"mode\":\"$ASTRA_AUDIT_MODE\", \"inventoryCoverage\":\"$ASTRA_SCAN_INVENTORY_COVERAGE\", \"automatedScanType\":\"$ASTRA_SCAN_TYPE\", \"targetScopeUri\":\"$ASTRA_TARGET_SCOPE_URI\", \"vcsMetadata\":$ASTRA_VCS_METADATA, \"report\":$REPORT_CONTENT}"
+    #Use temporary file to avoid "Argument list too long" error with large JSON payloads
+    astra_temp_file=$(mktemp)
+    cat > "$astra_temp_file" <<EOF
+{"accessToken":"$ASTRA_ACCESS_TOKEN","projectId":"$ASTRA_PROJECT_ID", "mode":"$ASTRA_AUDIT_MODE", "inventoryCoverage":"$ASTRA_SCAN_INVENTORY_COVERAGE", "automatedScanType":"$ASTRA_SCAN_TYPE", "targetScopeUri":"$ASTRA_TARGET_SCOPE_URI", "vcsMetadata":$ASTRA_VCS_METADATA, "report":$REPORT_CONTENT}
+EOF
    
     response=$(curl -s -o webhook_response.txt -w "%{http_code}" \
     --user-agent "Astra Pentest Trigger Script/1.1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --request POST \
-    --data "$request_body" \
+    --data @"$astra_temp_file" \
     "$ASTRA_SECRET_SCAN_REPORT_URL")
     status_code=$(tail -n1 <<< "$response")
 
@@ -220,9 +224,13 @@ function runAstraSecretScan() {
         cat webhook_response.txt
         echo ""
         rm -f astra-secret-scan-report.json
+        # Clean up temporary file
+        rm -f "$astra_temp_file"
         return 0
     fi
 
+    # Clean up temporary file
+    rm -f "$astra_temp_file"
     return 0
 }
 
@@ -311,8 +319,8 @@ function astraPentestTrigger() {
 }
 
 # Check ASTRA_SCAN_TYPE to determine which scan to run
-if [ "${ASTRA_SCAN_TYPE}" = "secret-scan" ]; then
-    echo "ASTRA_SCAN_TYPE is set to 'secret-scan', running secret scan with version ${ASTRA_SECRET_SCAN_BINARY_VERSION}..."
+if [ "${ASTRA_SCAN_TYPE}" = "secret_scanning" ]; then
+    echo "ASTRA_SCAN_TYPE is set to 'secret_scanning', running secret scan with version ${ASTRA_SECRET_SCAN_BINARY_VERSION}..."
     runAstraSecretScan
 else
     # For any other scan type, run the pentest trigger

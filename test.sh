@@ -194,7 +194,7 @@ EOF
     --header "Accept: application/json" \
     --request POST \
     --data @"$astra_temp_file" \
-    "$ASTRA_SECRET_SCAN_REPORT_URL")
+    "$ASTRA_SCAN_START_URL")
     status_code=$(tail -n1 <<< "$response")
 
     if [[ "$status_code" == "200" ]]; then

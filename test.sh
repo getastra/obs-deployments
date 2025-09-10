@@ -220,7 +220,7 @@ EOF
         echo ""
         cat webhook_response.txt
         echo ""
-        cat "vulnerabilitesPageLink: https://my.getastra.com/scans/$audit_id"
+        echo "vulnerabilitesPageLink: https://my.getastra.com/scans/$audit_id"
         echo ""
         rm -f astra-secret-scan-report.json
     else

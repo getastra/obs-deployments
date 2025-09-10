@@ -77,7 +77,7 @@ fi
 
 function runAstraSecretScan() {
     # Where to stash the binary
-    BIN_PATH="${HOME}/.astra"    
+    ASTRA_BIN_PATH="${HOME}/.astra"    
 
     # Check if we have a valid git root
     if [ -z "$ASTRA_GIT_ROOT" ]; then
@@ -94,49 +94,49 @@ function runAstraSecretScan() {
     # Handle version logic
     if [[ -z "$ASTRA_SECRET_SCAN_BINARY_VERSION" || "$ASTRA_SECRET_SCAN_BINARY_VERSION" == "latest" ]]; then
         # If empty, use default version
-        DOWNLOAD_VERSION="$ASTRA_SECRET_LATEST_BINARY_VERSION"
-        BINARY_NAME="astra-secret-scan-latest"
+        download_version="$ASTRA_SECRET_LATEST_BINARY_VERSION"
+        ASTRA_BINARY_NAME="astra-secret-scan-latest"
     else
         # Use the specific version provided
-        DOWNLOAD_VERSION="$ASTRA_SECRET_SCAN_BINARY_VERSION"
-        BINARY_NAME="astra-secret-scan-$ASTRA_SECRET_SCAN_BINARY_VERSION"
+        download_version="$ASTRA_SECRET_SCAN_BINARY_VERSION"
+        ASTRA_BINARY_NAME="astra-secret-scan-$ASTRA_SECRET_SCAN_BINARY_VERSION"
     fi
 
     # Download & unpack on cache miss
-    if [[ ! -x "$BIN_PATH/$BINARY_NAME" ]]; then
-        echo "Cache miss, Downloading $BINARY_NAME for $OS/$ARCH…"
-        DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/download/v${DOWNLOAD_VERSION}/gitleaks_${DOWNLOAD_VERSION}_${OS}_${ARCH}.tar.gz"
+    if [[ ! -x "$ASTRA_BIN_PATH/$ASTRA_BINARY_NAME" ]]; then
+        echo "Cache miss, Downloading $ASTRA_BINARY_NAME for $OS/$ARCH…"
+        DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/download/v${download_version}/gitleaks_${download_version}_${OS}_${ARCH}.tar.gz"
         echo "Download URL: $DOWNLOAD_URL"
         
         # Create directory with error handling
-        if ! mkdir -p "$BIN_PATH"; then
-            echo "❌ Error: Failed to create directory $BIN_PATH"
+        if ! mkdir -p "$ASTRA_BIN_PATH"; then
+            echo "❌ Error: Failed to create directory $ASTRA_BIN_PATH"
             return 0
         fi
         
         # Download and extract with error handling
-        if ! curl -fsSL "$DOWNLOAD_URL" | tar -xz -C "$BIN_PATH" 2>/dev/null; then
+        if ! curl -fsSL "$DOWNLOAD_URL" | tar -xz -C "$ASTRA_BIN_PATH" 2>/dev/null; then
             echo "❌ Error: Failed to download or extract astra-secret-scan binary from $DOWNLOAD_URL"
             return 0
         fi
 
         # Rename the binary to the appropriate name
-        mv "$BIN_PATH/gitleaks" "$BIN_PATH/$BINARY_NAME"
+        mv "$ASTRA_BIN_PATH/gitleaks" "$ASTRA_BIN_PATH/$ASTRA_BINARY_NAME"
 
         # Verify the binary exists and is executable
-        if [[ ! -x "$BIN_PATH/$BINARY_NAME" ]]; then
-            echo "❌ Error: Binary not found or not executable at $BIN_PATH/$BINARY_NAME"
+        if [[ ! -x "$ASTRA_BIN_PATH/$ASTRA_BINARY_NAME" ]]; then
+            echo "❌ Error: Binary not found or not executable at $ASTRA_BIN_PATH/$ASTRA_BINARY_NAME"
             return 0
         fi
     else
-        echo "Cache hit, using cached $BINARY_NAME for $OS/$ARCH"
+        echo "Cache hit, using cached $ASTRA_BINARY_NAME for $OS/$ARCH"
     fi
 
     # Run the scan against the current directory
     echo "Running astra-secret-scan detect…"
-    echo "Binary location: $BIN_PATH"
+    echo "Binary location: $ASTRA_BIN_PATH"
     
-    if ! ls -ltr "$BIN_PATH" 2>/dev/null; then
+    if ! ls -ltr "$ASTRA_BIN_PATH" 2>/dev/null; then
         echo "⚠️ Warning: Unable to list binary directory contents"
     fi
 
@@ -144,7 +144,7 @@ function runAstraSecretScan() {
     if [ -z "$ASTRA_SECRET_SCAN_CONFIG_PATH" ]; then
         echo "No config file provided, invoking astra-secret-scan without a config file"
         echo "Scanning git repository at: $ASTRA_GIT_ROOT"
-        error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" \
+        error_output=$("$ASTRA_BIN_PATH/$ASTRA_BINARY_NAME" dir "$ASTRA_GIT_ROOT" \
         --report-format=json \
         --no-banner \
         --max-target-megabytes=1 \
@@ -162,7 +162,7 @@ function runAstraSecretScan() {
     else
         echo "Using config file: $ASTRA_SECRET_SCAN_CONFIG_PATH"
         echo "Scanning git repository at: $ASTRA_GIT_ROOT"
-        error_output=$("$BIN_PATH/$BINARY_NAME" dir "$ASTRA_GIT_ROOT" \
+        error_output=$("$ASTRA_BIN_PATH/$ASTRA_BINARY_NAME" dir "$ASTRA_GIT_ROOT" \
         --config="$ASTRA_SECRET_SCAN_CONFIG_PATH" \
         --report-format=json \
         --no-banner \
@@ -195,7 +195,6 @@ function runAstraSecretScan() {
 
     # Check if report was generated
     echo "✅ Scan complete. Report at astra-secret-scan-report.json"
-    cat astra-secret-scan-report.json
 
     #Send scan report to Astra Dashboard
     #Use temporary file to avoid "Argument list too long" error with large JSON payloads

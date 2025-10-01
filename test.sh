@@ -17,6 +17,7 @@ ASTRA_SECRET_SCAN_BINARY_VERSION="${ASTRA_SECRET_SCAN_BINARY_VERSION}"
 ASTRA_SECRET_SCAN_REPORT_URL="https://api3.getastra.dev/webhooks/integrations/ci-cd/gitleaks"
 ASTRA_SECRET_SCAN_CONFIG_PATH="${ASTRA_SECRET_SCAN_CONFIG_PATH:-}"
 ASTRA_SECRET_SCAN_GIT_ROOT="${ASTRA_SECRET_SCAN_GIT_ROOT:-}"
+ASTRA_SECRET_SCAN_TYPE="secret_scanning"
 
 # Initialize git metadata variables
 if command -v git &> /dev/null; then
@@ -326,7 +327,7 @@ function astraPentestTrigger() {
 }
 
 # Check ASTRA_SCAN_TYPE to determine which scan to run
-if [ "${ASTRA_SCAN_TYPE}" = "secret_scanning" ]; then
+if [ "${ASTRA_SCAN_TYPE}" = "${ASTRA_SECRET_SCAN_TYPE}" ]; then
     echo "ASTRA_SCAN_TYPE is set to 'secret_scanning', running secret scan with version ${ASTRA_SECRET_SCAN_BINARY_VERSION}..."
     runAstraSecretScan
 else
